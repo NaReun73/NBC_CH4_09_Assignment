@@ -28,6 +28,5 @@ void ABullsAndCowsPlayerController::SetChatMessageString(const FString& InChatMe
 
 void ABullsAndCowsPlayerController::PrintChatMessageString(const FString& InChatMessageString)
 {
-	// 화면에 출력
 	UKismetSystemLibrary::PrintString(this, ChatMessageString, true, true, FLinearColor::Red, 5.0f);
 }
