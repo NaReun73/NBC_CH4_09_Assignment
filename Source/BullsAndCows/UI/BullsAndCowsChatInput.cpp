@@ -32,6 +32,7 @@ void UBullsAndCowsChatInput::OnChatInputTextCommitted(const FText& Text, ETextCo
 			ABullsAndCowsPlayerController* OwningBullsAndCowsPlayerController = Cast<ABullsAndCowsPlayerController>(OwningPlayerController);
 			if (IsValid(OwningBullsAndCowsPlayerController) == true)
 			{
+				// 채팅 입력
 				OwningBullsAndCowsPlayerController->SetChatMessageString(Text.ToString());
 
 				EditableTextBox_ChatInput->SetText(FText());

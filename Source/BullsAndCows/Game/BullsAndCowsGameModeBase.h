@@ -28,6 +28,8 @@ public:
 
 	void PrintChatMessageString(ABullsAndCowsPlayerController* InChattingPlayerController, const FString& InChatMessageString);
 
+	void IncreaseGuessCount(ABullsAndCowsPlayerController* InChattingPlayerController);
+
 protected:
 	FString SecretNumberString;
 

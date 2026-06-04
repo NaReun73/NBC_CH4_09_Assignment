@@ -2,21 +2,28 @@
 #include "BullsAndCowsGameStateBase.h"
 #include "Player/BullsAndCowsPlayerController.h"
 #include "EngineUtils.h"
+#include "Player/BullsAndCowsPlayerState.h"
 
 void ABullsAndCowsGameModeBase::OnPostLogin(AController* NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
 
-	ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
-	if (IsValid(BullsAndCowsGameStateBase) == true)
-	{
-		BullsAndCowsGameStateBase->MulticastRPCBroadcastLogInMessage(TEXT("XXXXXXX"));
-	}
-
 	ABullsAndCowsPlayerController* BullsAndCowsPlayerController = Cast<ABullsAndCowsPlayerController>(NewPlayer);
 	if (IsValid(BullsAndCowsPlayerController) == true)
 	{
 		AllPlayerControllers.Add(BullsAndCowsPlayerController);
+
+		ABullsAndCowsPlayerState* BullsAndCowsPlayerState = BullsAndCowsPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+		if (IsValid(BullsAndCowsPlayerState) == true)
+		{
+			BullsAndCowsPlayerState->PlayerNameString = TEXT("Player ") + FString::FromInt(AllPlayerControllers.Num());
+		}
+
+		ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+		if (IsValid(BullsAndCowsGameStateBase) == true)
+		{
+			BullsAndCowsGameStateBase->MulticastRPCBroadcastLogInMessage(BullsAndCowsPlayerState->PlayerNameString);
+		}
 	}
 }
 
@@ -128,25 +135,49 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 	if (IsGuessNumberString(GuessNumberString) == true)
 	{
 		FString JudgeResultString = JudgeResult(SecretNumberString, GuessNumberString);
-		for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
+
+		IncreaseGuessCount(InChattingPlayerController);
+
+		ABullsAndCowsPlayerState* BullsAndCowsPlayerState = InChattingPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+		if (IsValid(BullsAndCowsPlayerState) == true)
 		{
-			ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
-			if (IsValid(BullsAndCowsPlayerController) == true)
+			FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
+
+			for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
 			{
-				FString CombinedMessageString = InChatMessageString + TEXT(" -> ") + JudgeResultString;
-				BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(CombinedMessageString);
+				ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
+				if (IsValid(BullsAndCowsPlayerController) == true)
+				{
+					FString FinalCombinedMessageString = CombinedMessageString + TEXT(" -> ") + JudgeResultString;
+					BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(FinalCombinedMessageString);
+				}
 			}
 		}
 	}
 	else
 	{
-		for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
+		ABullsAndCowsPlayerState* BullsAndCowsPlayerState = InChattingPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+		if (IsValid(BullsAndCowsPlayerState) == true)
 		{
-			ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
-			if (IsValid(BullsAndCowsPlayerController) == true)
+			FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
+
+			for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
 			{
-				BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(InChatMessageString);
+				ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
+				if (IsValid(BullsAndCowsPlayerController) == true)
+				{
+					BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(CombinedMessageString);
+				}
 			}
 		}
+	}
+}
+
+void ABullsAndCowsGameModeBase::IncreaseGuessCount(ABullsAndCowsPlayerController* InChattingPlayerController)
+{
+	ABullsAndCowsPlayerState* BullsAndCowsPlayerState = InChattingPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+	if (IsValid(BullsAndCowsPlayerState) == true)
+	{
+		BullsAndCowsPlayerState->CurrentGuessCount++;
 	}
 }
