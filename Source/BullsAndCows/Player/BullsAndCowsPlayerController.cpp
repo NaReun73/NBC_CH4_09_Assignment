@@ -3,6 +3,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "BullsAndCows/BullsAndCows.h"
 #include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
+#include "Game/BullsAndCowsGameModeBase.h"
 
 void ABullsAndCowsPlayerController::BeginPlay()
 {
@@ -48,12 +50,13 @@ void ABullsAndCowsPlayerController::ClientRPCPrintChatMessageString_Implementati
 
 void ABullsAndCowsPlayerController::ServerRPCPrintChatMessageString_Implementation(const FString& InChatMessageString)
 {
-	for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
+	AGameModeBase* GM = UGameplayStatics::GetGameMode(this);
+	if (IsValid(GM) == true)
 	{
-		ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
-		if (IsValid(BullsAndCowsPlayerController) == true)
+		ABullsAndCowsGameModeBase* BullsAndCowsGM = Cast<ABullsAndCowsGameModeBase>(GM);
+		if (IsValid(BullsAndCowsGM) == true)
 		{
-			BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(InChatMessageString);
+			BullsAndCowsGM->PrintChatMessageString(this, InChatMessageString);
 		}
 	}
 }

@@ -4,6 +4,9 @@
 #include "GameFramework/GameModeBase.h"
 #include "BullsAndCowsGameModeBase.generated.h"
 
+
+class ABullsAndCowsPlayerController;
+
 /**
  * 
  */
@@ -20,4 +23,13 @@ public:
 	bool IsGuessNumberString(const FString& InNumberString);
 
 	FString JudgeResult(const FString& InSecretNumberString, const FString& InGuessNumberString);
+
+	virtual void BeginPlay() override;
+
+	void PrintChatMessageString(ABullsAndCowsPlayerController* InChattingPlayerController, const FString& InChatMessageString);
+
+protected:
+	FString SecretNumberString;
+
+	TArray<TObjectPtr<ABullsAndCowsPlayerController>> AllPlayerControllers;
 };
