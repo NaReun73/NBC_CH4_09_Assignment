@@ -11,6 +11,8 @@ void ABullsAndCowsGameModeBase::OnPostLogin(AController* NewPlayer)
 	ABullsAndCowsPlayerController* BullsAndCowsPlayerController = Cast<ABullsAndCowsPlayerController>(NewPlayer);
 	if (IsValid(BullsAndCowsPlayerController) == true)
 	{
+		BullsAndCowsPlayerController->NotificationText = FText::FromString(TEXT("Connected to the game server."));
+
 		AllPlayerControllers.Add(BullsAndCowsPlayerController);
 
 		ABullsAndCowsPlayerState* BullsAndCowsPlayerState = BullsAndCowsPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
@@ -150,6 +152,9 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 				{
 					FString FinalCombinedMessageString = CombinedMessageString + TEXT(" -> ") + JudgeResultString;
 					BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(FinalCombinedMessageString);
+
+					int32 StrikeCount = FCString::Atoi(*JudgeResultString.Left(1));
+					JudgeGame(InChattingPlayerController, StrikeCount);
 				}
 			}
 		}
@@ -179,5 +184,63 @@ void ABullsAndCowsGameModeBase::IncreaseGuessCount(ABullsAndCowsPlayerController
 	if (IsValid(BullsAndCowsPlayerState) == true)
 	{
 		BullsAndCowsPlayerState->CurrentGuessCount++;
+	}
+}
+
+void ABullsAndCowsGameModeBase::ResetGame()
+{
+	SecretNumberString = GenerateSecretNumber();
+
+	for (const auto& BullsAndCowsPlayerController : AllPlayerControllers)
+	{
+		ABullsAndCowsPlayerState* BullsAndCowsPlayerState = BullsAndCowsPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+		if (IsValid(BullsAndCowsPlayerState) == true)
+		{
+			BullsAndCowsPlayerState->CurrentGuessCount = 0;
+		}
+	}
+}
+
+void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChattingPlayerController, int InStrikeCount)
+{
+	if (3 == InStrikeCount)
+	{
+		ABullsAndCowsPlayerState* BullsAndCowsPlayerState = InChattingPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+		for (const auto& BullsAndCowsPlayerController : AllPlayerControllers)
+		{
+			if (IsValid(BullsAndCowsPlayerController) == true)
+			{
+				FString CombinedMessageString = BullsAndCowsPlayerState->PlayerNameString + TEXT(" has won the game");
+				BullsAndCowsPlayerController->NotificationText = FText::FromString(CombinedMessageString);
+
+				ResetGame();
+			}
+		}
+	}
+	else
+	{
+		bool bIsDraw = true;
+		for (const auto& BullsAndCowsPlayerController : AllPlayerControllers)
+		{
+			ABullsAndCowsPlayerState* BullsAndCowsPlayerState = BullsAndCowsPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+
+			if (IsValid(BullsAndCowsPlayerState) == true)
+			{
+				if (BullsAndCowsPlayerState->CurrentGuessCount < BullsAndCowsPlayerState->MaxGuessCount)
+				{
+					bIsDraw = false;
+					break;
+				}
+			}
+		}
+		if (true == bIsDraw)
+		{
+			for (const auto& BullsAndCowsPlayerController : AllPlayerControllers)
+			{
+				BullsAndCowsPlayerController->NotificationText = FText::FromString(TEXT("Draw..."));
+				
+				ResetGame();
+			}
+		}
 	}
 }

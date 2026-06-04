@@ -30,6 +30,10 @@ public:
 
 	void IncreaseGuessCount(ABullsAndCowsPlayerController* InChattingPlayerController);
 
+	void ResetGame();
+
+	void JudgeGame(ABullsAndCowsPlayerController* InChattingPlayerController, int InStrikeCount);
+
 protected:
 	FString SecretNumberString;
 
