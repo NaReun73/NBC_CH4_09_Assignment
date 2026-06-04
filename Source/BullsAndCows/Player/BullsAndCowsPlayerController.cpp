@@ -1,10 +1,17 @@
 ﻿#include "BullsAndCowsPlayerController.h"
 #include "UI/BullsAndCowsChatInput.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "BullsAndCows/BullsAndCows.h"
+#include "EngineUtils.h"
 
 void ABullsAndCowsPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (IsLocalController() == false)
+	{
+		return;
+	}
 
 	FInputModeUIOnly InputModeUIOnly;
 	SetInputMode(InputModeUIOnly);
@@ -23,11 +30,31 @@ void ABullsAndCowsPlayerController::SetChatMessageString(const FString& InChatMe
 {
 	ChatMessageString = InChatMessageString;
 
-	PrintChatMessageString(ChatMessageString);
+	if (IsLocalController() == true)
+	{
+		ServerRPCPrintChatMessageString(InChatMessageString);
+	}
 }
 
 void ABullsAndCowsPlayerController::PrintChatMessageString(const FString& InChatMessageString)
 {
-	// 화면에 출력
-	UKismetSystemLibrary::PrintString(this, ChatMessageString, true, true, FLinearColor::Red, 5.0f);
+	BullsAndCowsFuntionLibrary::MyPrintString(this, InChatMessageString, 10.0f);
 }
+
+void ABullsAndCowsPlayerController::ClientRPCPrintChatMessageString_Implementation(const FString& InChatMessageString)
+{
+	PrintChatMessageString(InChatMessageString);
+}
+
+void ABullsAndCowsPlayerController::ServerRPCPrintChatMessageString_Implementation(const FString& InChatMessageString)
+{
+	for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
+	{
+		ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
+		if (IsValid(BullsAndCowsPlayerController) == true)
+		{
+			BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(InChatMessageString);
+		}
+	}
+}
+
