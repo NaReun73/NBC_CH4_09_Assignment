@@ -67,20 +67,28 @@ bool ABullsAndCowsGameModeBase::IsGuessNumberString(const FString& InNumberStrin
 		TSet<TCHAR> UniqueDigits;
 		for (TCHAR C : InNumberString)
 		{
+			// 문자가 섞여있거나 0일 경우
 			if (FChar::IsDigit(C) == false || C == '0')
 			{
 				bIsUnique = false;
 				break;
 			}
 
+			// 검사 이후 Set에 넣어주기
 			UniqueDigits.Add(C);
 		}
 
-		// 중복 숫자 확인
-		if (bIsUnique == false)
+		// 중복이 있으면 3자리가 안됨
+		if (UniqueDigits.Num() < 3)
 		{
 			break;
 		}
+
+		// 중복 숫자 확인
+		/*if (bIsUnique == false)
+		{
+			break;
+		}*/
 
 		bCanPlay = true;
 
@@ -131,9 +139,13 @@ void ABullsAndCowsGameModeBase::BeginPlay()
 
 void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerController* InChattingPlayerController, const FString& InChatMessageString)
 {
-	int Index = InChatMessageString.Len() - 3;
+	// 기존 강의에서 뒤에서 3자리를 확인
+	//int Index = InChatMessageString.Len() - 3;
+	//FString GuessNumberString = InChatMessageString.RightChop(Index);
 
-	FString GuessNumberString = InChatMessageString.RightChop(Index);
+	// 메시지 그대로 확인
+	FString GuessNumberString = InChatMessageString;
+
 	if (IsGuessNumberString(GuessNumberString) == true)
 	{
 		FString JudgeResultString = JudgeResult(SecretNumberString, GuessNumberString);
@@ -165,6 +177,11 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 		if (IsValid(BullsAndCowsPlayerState) == true)
 		{
 			FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
+
+			if (GuessNumberString.Len() == 3)
+			{
+				CombinedMessageString = CombinedMessageString + TEXT(" (중복된 숫자나 문자가 섞여있습니다. 다시 입력하세요.");
+			}
 
 			for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
 			{

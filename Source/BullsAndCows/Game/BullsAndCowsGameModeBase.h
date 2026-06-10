@@ -18,10 +18,13 @@ class BULLSANDCOWS_API ABullsAndCowsGameModeBase : public AGameModeBase
 public:
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
+	// 정답 번호 생성
 	FString GenerateSecretNumber();
 
+	// 일반 채팅인지 문제의 답인지 확인
 	bool IsGuessNumberString(const FString& InNumberString);
 
+	// 정답 비교
 	FString JudgeResult(const FString& InSecretNumberString, const FString& InGuessNumberString);
 
 	virtual void BeginPlay() override;
