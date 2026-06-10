@@ -1,6 +1,7 @@
 ﻿#include "Game/BullsAndCowsGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/BullsAndCowsPlayerController.h"
+#include "Net/UnrealNetwork.h"
 
 void ABullsAndCowsGameStateBase::MulticastRPCBroadcastLogInMessage_Implementation(const FString& InNameString)
 {
@@ -17,4 +18,12 @@ void ABullsAndCowsGameStateBase::MulticastRPCBroadcastLogInMessage_Implementatio
 			}
 		}
 	}
+}
+
+void ABullsAndCowsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, AlivePlayerControllerCount);
+	DOREPLIFETIME(ThisClass, MatchState);
 }

@@ -37,6 +37,27 @@ public:
 
 	void JudgeGame(ABullsAndCowsPlayerController* InChattingPlayerController, int InStrikeCount);
 
+private:
+	UFUNCTION()
+	void OnMainTimerElapsed();
+
+	void NotifyToAllPlayer(const FString& NotificationString);
+
+public:
+	FTimerHandle MainTimerHandle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 WaitingTime = 10;
+
+	int32 RemainWaitingTimeForPlaying = 10;
+
+	int32 MinimumPlayerCountForPlaying = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 PlayTimeLimit = 30;
+
+	int32 PlayTime = 30;
+
 protected:
 	FString SecretNumberString;
 

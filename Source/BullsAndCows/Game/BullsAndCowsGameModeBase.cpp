@@ -135,6 +135,12 @@ void ABullsAndCowsGameModeBase::BeginPlay()
 
 	SecretNumberString = GenerateSecretNumber();
 	UE_LOG(LogTemp, Error, TEXT("%s"), *SecretNumberString);
+
+	GetWorld()->GetTimerManager().SetTimer(MainTimerHandle, this, &ThisClass::OnMainTimerElapsed, 1.0f, true);
+
+	RemainWaitingTimeForPlaying = WaitingTime;
+
+	PlayTime = PlayTimeLimit;
 }
 
 void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerController* InChattingPlayerController, const FString& InChatMessageString)
@@ -259,5 +265,74 @@ void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChatt
 				ResetGame();
 			}
 		}
+	}
+}
+
+void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
+{
+	ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+	if (IsValid(BullsAndCowsGameStateBase) == false)
+	{
+		return;
+	}
+
+	switch (BullsAndCowsGameStateBase->MatchState)
+	{
+	case EMatchState::None:
+		break;
+	case EMatchState::Waiting:
+	{
+		FString NotificationString = FString::Printf(TEXT(""));
+
+		if (AllPlayerControllers.Num() < MinimumPlayerCountForPlaying)
+		{
+			NotificationString = FString::Printf(TEXT("Wait another players for playing."));
+
+			RemainWaitingTimeForPlaying = WaitingTime; // 최소인원이 안된다면 대기 시간 초기화.
+		}
+		else
+		{
+			NotificationString = FString::Printf(TEXT("Wait %d seconds for playing."), RemainWaitingTimeForPlaying);
+
+			--RemainWaitingTimeForPlaying;
+		}
+
+		if (RemainWaitingTimeForPlaying <= 0)
+		{
+			NotificationString = FString::Printf(TEXT(""));
+
+			BullsAndCowsGameStateBase->MatchState = EMatchState::Playing;
+		}
+
+		NotifyToAllPlayer(NotificationString);
+
+		break;
+	}
+	case EMatchState::Playing:
+	{
+		FString NotificationString = FString::Printf(TEXT(""));
+
+		NotificationString = FString::Printf(TEXT("남은 시간 : %d "), PlayTime);
+
+		--PlayTime;
+
+		NotifyToAllPlayer(NotificationString);
+
+		break;
+	}
+	case EMatchState::Ending:
+		break;
+	case EMatchState::End:
+		break;
+	default:
+		break;
+	}
+}
+
+void ABullsAndCowsGameModeBase::NotifyToAllPlayer(const FString& NotificationString)
+{
+	for (auto GamePlayerController : AllPlayerControllers)
+	{
+		GamePlayerController->NotificationText = FText::FromString(NotificationString);
 	}
 }
