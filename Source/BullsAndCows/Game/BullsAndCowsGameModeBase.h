@@ -38,8 +38,6 @@ public:
 
 	void JudgeGame(ABullsAndCowsPlayerController* InChattingPlayerController, int InStrikeCount);
 
-	void TurnComplete();
-
 private:
 	UFUNCTION()
 	void OnMainTimerElapsed();
