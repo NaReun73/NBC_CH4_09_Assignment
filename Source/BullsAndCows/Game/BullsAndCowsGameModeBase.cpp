@@ -19,6 +19,8 @@ void ABullsAndCowsGameModeBase::OnPostLogin(AController* NewPlayer)
 		if (IsValid(BullsAndCowsPlayerState) == true)
 		{
 			BullsAndCowsPlayerState->PlayerNameString = TEXT("Player ") + FString::FromInt(AllPlayerControllers.Num());
+			PlayerTurnList.Add(BullsAndCowsPlayerState);
+			UE_LOG(LogTemp, Log, TEXT("%s 등록 완료! 현재 총 인원: %d명"), *BullsAndCowsPlayerState->PlayerNameString, PlayerTurnList.Num());
 		}
 
 		ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
@@ -141,18 +143,75 @@ void ABullsAndCowsGameModeBase::BeginPlay()
 	RemainWaitingTimeForPlaying = WaitingTime;
 
 	PlayTime = PlayTimeLimit;
+
 }
 
 void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerController* InChattingPlayerController, const FString& InChatMessageString)
 {
-	// 기존 강의에서 뒤에서 3자리를 확인
-	//int Index = InChatMessageString.Len() - 3;
-	//FString GuessNumberString = InChatMessageString.RightChop(Index);
-
 	// 메시지 그대로 확인
 	FString GuessNumberString = InChatMessageString;
 
-	if (IsGuessNumberString(GuessNumberString) == true)
+	ABullsAndCowsPlayerState* BullsAndCowsPlayerState = InChattingPlayerController->GetPlayerState<ABullsAndCowsPlayerState>();
+	if (IsValid(BullsAndCowsPlayerState) == true)
+	{
+		if (CheckPlayerTurn(BullsAndCowsPlayerState) == true)
+		{
+			if (IsGuessNumberString(GuessNumberString) == true)
+			{
+				FString JudgeResultString = JudgeResult(SecretNumberString, GuessNumberString);
+
+				IncreaseGuessCount(InChattingPlayerController);
+
+				FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
+
+				for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
+				{
+					ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
+					if (IsValid(BullsAndCowsPlayerController) == true)
+					{
+						FString FinalCombinedMessageString = CombinedMessageString + TEXT(" -> ") + JudgeResultString;
+						BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(FinalCombinedMessageString);
+
+						int32 StrikeCount = FCString::Atoi(*JudgeResultString.Left(1));
+						JudgeGame(InChattingPlayerController, StrikeCount);
+					}
+				}
+			}
+			else
+			{
+				FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
+
+				if (GuessNumberString.Len() == 3)
+				{
+					CombinedMessageString = CombinedMessageString + TEXT(" (중복된 숫자나 문자가 섞여있습니다. 다시 입력하세요.");
+				}
+
+				for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
+				{
+					ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
+					if (IsValid(BullsAndCowsPlayerController) == true)
+					{
+						BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(CombinedMessageString);
+					}
+				}
+			}
+		}
+		else
+		{
+			FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
+
+			for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
+			{
+				ABullsAndCowsPlayerController* BullsAndCowsPlayerController = *It;
+				if (IsValid(BullsAndCowsPlayerController) == true)
+				{
+					BullsAndCowsPlayerController->ClientRPCPrintChatMessageString(CombinedMessageString);
+				}
+			}
+		}
+	}
+
+	/*if (IsGuessNumberString(GuessNumberString) == true)
 	{
 		FString JudgeResultString = JudgeResult(SecretNumberString, GuessNumberString);
 
@@ -184,9 +243,24 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 		{
 			FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
 
-			if (GuessNumberString.Len() == 3)
+			ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+			if (IsValid(BullsAndCowsGameStateBase) == true)
 			{
-				CombinedMessageString = CombinedMessageString + TEXT(" (중복된 숫자나 문자가 섞여있습니다. 다시 입력하세요.");
+				FString CurrentPlayerName = BullsAndCowsGameStateBase->CurrentTurnPlayerState->PlayerNameString;
+				if (CurrentPlayerName == BullsAndCowsPlayerState->PlayerNameString)
+				{
+					if (GuessNumberString.Len() == 3)
+					{
+						CombinedMessageString = CombinedMessageString + TEXT(" (중복된 숫자나 문자가 섞여있습니다. 다시 입력하세요.");
+					}
+				}
+				else
+				{
+					if (GuessNumberString.Len() == 3)
+					{
+						CombinedMessageString = CombinedMessageString + TEXT(" (다른 사람의 턴입니다.)");
+					}
+				}
 			}
 
 			for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
@@ -198,7 +272,7 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 				}
 			}
 		}
-	}
+	}*/
 }
 
 void ABullsAndCowsGameModeBase::IncreaseGuessCount(ABullsAndCowsPlayerController* InChattingPlayerController)
@@ -268,6 +342,10 @@ void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChatt
 	}
 }
 
+void ABullsAndCowsGameModeBase::TurnComplete()
+{
+}
+
 void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
 {
 	ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
@@ -302,6 +380,8 @@ void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
 			NotificationString = FString::Printf(TEXT(""));
 
 			BullsAndCowsGameStateBase->MatchState = EMatchState::Playing;
+
+			StartTurn(PlayerTurnList[0]);
 		}
 
 		NotifyToAllPlayer(NotificationString);
@@ -312,9 +392,16 @@ void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
 	{
 		FString NotificationString = FString::Printf(TEXT(""));
 
-		NotificationString = FString::Printf(TEXT("남은 시간 : %d "), PlayTime);
+		FString CurrentPlayerName = BullsAndCowsGameStateBase->CurrentTurnPlayerState->PlayerNameString;
+
+		NotificationString = FString::Printf(TEXT("%s 의 턴 - 남은 시간 : %d "), *CurrentPlayerName, PlayTime);
 
 		--PlayTime;
+
+		if (PlayTime < 0)
+		{
+			EndTurn();
+		}
 
 		NotifyToAllPlayer(NotificationString);
 
@@ -336,3 +423,49 @@ void ABullsAndCowsGameModeBase::NotifyToAllPlayer(const FString& NotificationStr
 		GamePlayerController->NotificationText = FText::FromString(NotificationString);
 	}
 }
+
+void ABullsAndCowsGameModeBase::StartTurn(ABullsAndCowsPlayerState* NewPlayerState)
+{
+	ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+	if (IsValid(BullsAndCowsGameStateBase) == true && NewPlayerState)
+	{
+		BullsAndCowsGameStateBase->CurrentTurnPlayerState = NewPlayerState;
+
+		PlayTime = PlayTimeLimit;
+
+		UE_LOG(LogTemp, Log, TEXT("현재 플레이어 : %s"), *NewPlayerState->PlayerNameString);
+	}
+}
+
+void ABullsAndCowsGameModeBase::EndTurn()
+{
+	ChooseNextPlayer();
+}
+
+void ABullsAndCowsGameModeBase::ChooseNextPlayer()
+{
+	if (PlayerTurnList.Num() <= 1)
+	{
+		return;
+	}
+
+	CurrentTurnIndex = (CurrentTurnIndex + 1) % PlayerTurnList.Num();
+
+	StartTurn(PlayerTurnList[CurrentTurnIndex]);
+}
+
+bool ABullsAndCowsGameModeBase::CheckPlayerTurn(ABullsAndCowsPlayerState* RequestingPlayer)
+{
+	ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+	if (IsValid(BullsAndCowsGameStateBase) == true)
+	{
+		FString CurrentPlayerName = BullsAndCowsGameStateBase->CurrentTurnPlayerState->PlayerNameString;
+		if (CurrentPlayerName == RequestingPlayer->PlayerNameString)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+

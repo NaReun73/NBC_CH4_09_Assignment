@@ -6,6 +6,7 @@
 
 
 class ABullsAndCowsPlayerController;
+class ABullsAndCowsPlayerState;
 
 /**
  * 
@@ -37,11 +38,21 @@ public:
 
 	void JudgeGame(ABullsAndCowsPlayerController* InChattingPlayerController, int InStrikeCount);
 
+	void TurnComplete();
+
 private:
 	UFUNCTION()
 	void OnMainTimerElapsed();
 
 	void NotifyToAllPlayer(const FString& NotificationString);
+
+	void StartTurn(ABullsAndCowsPlayerState* NewPlayerState);
+
+	void EndTurn();
+	
+	void ChooseNextPlayer();
+
+	bool CheckPlayerTurn(ABullsAndCowsPlayerState* RequestingPlayer);
 
 public:
 	FTimerHandle MainTimerHandle;
@@ -58,8 +69,12 @@ public:
 
 	int32 PlayTime = 30;
 
+	int32 CurrentTurnIndex = 0;
+
 protected:
 	FString SecretNumberString;
 
 	TArray<TObjectPtr<ABullsAndCowsPlayerController>> AllPlayerControllers;
+
+	TArray<TObjectPtr<ABullsAndCowsPlayerState>> PlayerTurnList;
 };

@@ -2,6 +2,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Player/BullsAndCowsPlayerController.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/BullsAndCowsPlayerState.h"
 
 void ABullsAndCowsGameStateBase::MulticastRPCBroadcastLogInMessage_Implementation(const FString& InNameString)
 {
@@ -26,4 +27,13 @@ void ABullsAndCowsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 
 	DOREPLIFETIME(ThisClass, AlivePlayerControllerCount);
 	DOREPLIFETIME(ThisClass, MatchState);
+	DOREPLIFETIME(ThisClass, CurrentTurnPlayerState);
+}
+
+void ABullsAndCowsGameStateBase::OnRep_CurrentTurnPlayer()
+{
+	if (CurrentTurnPlayerState)
+	{
+		
+	}
 }
