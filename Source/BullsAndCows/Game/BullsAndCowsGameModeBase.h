@@ -69,6 +69,13 @@ public:
 
 	int32 CurrentTurnIndex = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 EndTimeLimit = 10;
+
+	int32 EndTime = 10;
+
+
+
 protected:
 	FString SecretNumberString;
 

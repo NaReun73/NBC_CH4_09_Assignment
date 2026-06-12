@@ -30,10 +30,3 @@ void ABullsAndCowsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	DOREPLIFETIME(ThisClass, CurrentTurnPlayerState);
 }
 
-void ABullsAndCowsGameStateBase::OnRep_CurrentTurnPlayer()
-{
-	if (CurrentTurnPlayerState)
-	{
-		
-	}
-}

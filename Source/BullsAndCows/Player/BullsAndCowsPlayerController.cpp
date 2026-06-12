@@ -57,7 +57,7 @@ void ABullsAndCowsPlayerController::SetChatMessageString(const FString& InChatMe
 			//FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + TEXT(" : ") + InChatMessageString;
 			//ServerRPCPrintChatMessageString(CombinedMessageString);
 
-			// 정답 시도시 바로 반영 처리해보기
+			// 정답 시도시 바로 반영 처리
 			ServerRPCPrintChatMessageString(InChatMessageString);
 		}
 	}

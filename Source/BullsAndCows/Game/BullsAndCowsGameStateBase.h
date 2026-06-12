@@ -33,8 +33,8 @@ public:
 	void MulticastRPCBroadcastLogInMessage(const FString& InNameString = FString(TEXT("XXXXXXX")));
 
 protected:
-	UFUNCTION()
-	void OnRep_CurrentTurnPlayer();
+	//UFUNCTION()
+	//void OnRep_CurrentTurnPlayer();
 
 public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
@@ -43,7 +43,8 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	EMatchState MatchState = EMatchState::Waiting;
 
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentTurnPlayer, VisibleAnywhere, BlueprintReadOnly)
+	//Using = OnRep_CurrentTurnPlayer
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<ABullsAndCowsPlayerState> CurrentTurnPlayerState;
 
 	int32 TurnRemainingTime = 30;

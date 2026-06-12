@@ -157,6 +157,7 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 		ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
 		if (IsValid(BullsAndCowsGameStateBase) == true)
 		{
+			// 게임 상태가 Playing가 아니면 일반 채팅
 			if (BullsAndCowsGameStateBase->MatchState != EMatchState::Playing)
 			{
 				FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
@@ -174,9 +175,11 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 			}
 		}
 
+		// 플레이어 턴 확인
 		if (CheckPlayerTurn(BullsAndCowsPlayerState) == true)
 		{
-			if (IsGuessNumberString(GuessNumberString) == true)
+			// 정답 조건 확인
+			if (IsGuessNumberString(GuessNumberString) == true && BullsAndCowsPlayerState->CurrentGuessCount < 3)
 			{
 				FString JudgeResultString = JudgeResult(SecretNumberString, GuessNumberString);
 
@@ -201,11 +204,20 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 			}
 			else
 			{
+				// 정답을 맞추려고 했지만 조건에 맞지않으면 일반 채팅으로
 				FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
 
+				// 어떤 조건인지 간단히 추가 출력
 				if (GuessNumberString.Len() == 3)
 				{
-					CombinedMessageString = CombinedMessageString + TEXT(" (중복된 숫자나 문자가 섞여있습니다. 다시 입력하세요.");
+					if (BullsAndCowsPlayerState->CurrentGuessCount > 3)
+					{
+						CombinedMessageString = CombinedMessageString + TEXT(" (정답을 맞출 기회를 모두 사용했습니다.)");
+					}
+					else
+					{
+						CombinedMessageString = CombinedMessageString + TEXT(" (중복된 숫자나 문자가 섞여있습니다. 다시 입력하세요.");
+					}
 				}
 
 				for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
@@ -220,7 +232,13 @@ void ABullsAndCowsGameModeBase::PrintChatMessageString(ABullsAndCowsPlayerContro
 		}
 		else
 		{
+			//나의 턴이 아닐시 정답 확인을 할려해도 무시하고 일반 채팅
 			FString CombinedMessageString = BullsAndCowsPlayerState->GetPlayerInfoString() + +TEXT(" : ") + InChatMessageString;
+
+			if (InChatMessageString.Len() == 3)
+			{
+				CombinedMessageString = CombinedMessageString + TEXT(" (다른 플레이어의 턴입니다.)");
+			}
 
 			for (TActorIterator<ABullsAndCowsPlayerController> It(GetWorld()); It; ++It)
 			{
@@ -269,7 +287,13 @@ void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChatt
 				FString CombinedMessageString = BullsAndCowsPlayerState->PlayerNameString + TEXT(" has won the game");
 				BullsAndCowsPlayerController->NotificationText = FText::FromString(CombinedMessageString);
 
-				ResetGame();
+				//ResetGame();
+
+				ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+				if (IsValid(BullsAndCowsGameStateBase) == true)
+				{
+					BullsAndCowsGameStateBase->MatchState = EMatchState::Ending;
+				}
 			}
 		}
 	}
@@ -295,7 +319,13 @@ void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChatt
 			{
 				BullsAndCowsPlayerController->NotificationText = FText::FromString(TEXT("Draw..."));
 				
-				ResetGame();
+				//ResetGame();
+
+				ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+				if (IsValid(BullsAndCowsGameStateBase) == true)
+				{
+					BullsAndCowsGameStateBase->MatchState = EMatchState::Ending;
+				}
 			}
 		}
 	}
@@ -354,6 +384,10 @@ void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
 
 		if (PlayTime < 0)
 		{
+			if (PlayerTurnList[CurrentTurnIndex] == BullsAndCowsGameStateBase->CurrentTurnPlayerState)
+			{
+				PlayerTurnList[CurrentTurnIndex]->CurrentGuessCount++;
+			}
 			EndTurn();
 		}
 
@@ -362,7 +396,14 @@ void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
 		break;
 	}
 	case EMatchState::Ending:
+	{
+		FString NotificationString = FString::Printf(TEXT(""));
+
+		FString CurrentPlayerName = BullsAndCowsGameStateBase->CurrentTurnPlayerState->PlayerNameString;
+		NotificationString = FString::Printf(TEXT("%s - 재시작 : %d "), *CurrentPlayerName, PlayTime);
+
 		break;
+	}
 	case EMatchState::End:
 		break;
 	default:
