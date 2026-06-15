@@ -11,7 +11,7 @@ void ABullsAndCowsGameModeBase::OnPostLogin(AController* NewPlayer)
 	ABullsAndCowsPlayerController* BullsAndCowsPlayerController = Cast<ABullsAndCowsPlayerController>(NewPlayer);
 	if (IsValid(BullsAndCowsPlayerController) == true)
 	{
-		BullsAndCowsPlayerController->NotificationText = FText::FromString(TEXT("Connected to the game server."));
+		BullsAndCowsPlayerController->NotificationText = FText::FromString(TEXT("게임 서버 접속."));
 
 		AllPlayerControllers.Add(BullsAndCowsPlayerController);
 
@@ -49,6 +49,8 @@ FString ABullsAndCowsGameModeBase::GenerateSecretNumber()
 		Result.Append(FString::FromInt(Numbers[Index]));
 		Numbers.RemoveAt(Index);
 	}
+
+	UE_LOG(LogTemp, Error, TEXT("%s"), *Result);
 
 	return Result;
 }
@@ -136,7 +138,6 @@ void ABullsAndCowsGameModeBase::BeginPlay()
 	Super::BeginPlay();
 
 	SecretNumberString = GenerateSecretNumber();
-	UE_LOG(LogTemp, Error, TEXT("%s"), *SecretNumberString);
 
 	GetWorld()->GetTimerManager().SetTimer(MainTimerHandle, this, &ThisClass::OnMainTimerElapsed, 1.0f, true);
 
@@ -273,6 +274,11 @@ void ABullsAndCowsGameModeBase::ResetGame()
 			BullsAndCowsPlayerState->CurrentGuessCount = 0;
 		}
 	}
+	ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
+	if (IsValid(BullsAndCowsGameStateBase) == true)
+	{
+		BullsAndCowsGameStateBase->MatchState = EMatchState::Playing;
+	}
 }
 
 void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChattingPlayerController, int InStrikeCount)
@@ -284,14 +290,13 @@ void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChatt
 		{
 			if (IsValid(BullsAndCowsPlayerController) == true)
 			{
-				FString CombinedMessageString = BullsAndCowsPlayerState->PlayerNameString + TEXT(" has won the game");
+				FString CombinedMessageString = BullsAndCowsPlayerState->PlayerNameString + TEXT(" 의 승리 (잠시후 게임 재시작)");
 				BullsAndCowsPlayerController->NotificationText = FText::FromString(CombinedMessageString);
-
-				//ResetGame();
 
 				ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
 				if (IsValid(BullsAndCowsGameStateBase) == true)
 				{
+					EndTime = EndTimeLimit;
 					BullsAndCowsGameStateBase->MatchState = EMatchState::Ending;
 				}
 			}
@@ -317,13 +322,12 @@ void ABullsAndCowsGameModeBase::JudgeGame(ABullsAndCowsPlayerController* InChatt
 		{
 			for (const auto& BullsAndCowsPlayerController : AllPlayerControllers)
 			{
-				BullsAndCowsPlayerController->NotificationText = FText::FromString(TEXT("Draw..."));
-				
-				//ResetGame();
+				BullsAndCowsPlayerController->NotificationText = FText::FromString(TEXT("무승부... (잠시후 게임 재시작)"));
 
 				ABullsAndCowsGameStateBase* BullsAndCowsGameStateBase = GetGameState<ABullsAndCowsGameStateBase>();
 				if (IsValid(BullsAndCowsGameStateBase) == true)
 				{
+					EndTime = EndTimeLimit;
 					BullsAndCowsGameStateBase->MatchState = EMatchState::Ending;
 				}
 			}
@@ -349,13 +353,13 @@ void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
 
 		if (AllPlayerControllers.Num() < MinimumPlayerCountForPlaying)
 		{
-			NotificationString = FString::Printf(TEXT("Wait another players for playing."));
+			NotificationString = FString::Printf(TEXT("다른 플레이어를 기다리는중."));
 
 			RemainWaitingTimeForPlaying = WaitingTime; // 최소인원이 안된다면 대기 시간 초기화.
 		}
 		else
 		{
-			NotificationString = FString::Printf(TEXT("Wait %d seconds for playing."), RemainWaitingTimeForPlaying);
+			NotificationString = FString::Printf(TEXT("잠시후 게임이 시작됩니다 - %d초 ."), RemainWaitingTimeForPlaying);
 
 			--RemainWaitingTimeForPlaying;
 		}
@@ -397,10 +401,12 @@ void ABullsAndCowsGameModeBase::OnMainTimerElapsed()
 	}
 	case EMatchState::Ending:
 	{
-		FString NotificationString = FString::Printf(TEXT(""));
+		--EndTime;
 
-		FString CurrentPlayerName = BullsAndCowsGameStateBase->CurrentTurnPlayerState->PlayerNameString;
-		NotificationString = FString::Printf(TEXT("%s - 재시작 : %d "), *CurrentPlayerName, PlayTime);
+		if (EndTime < 0)
+		{
+			ResetGame();
+		}
 
 		break;
 	}
